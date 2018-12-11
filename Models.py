@@ -6,13 +6,9 @@ import matplotlib.pyplot as plt
 %matplotlib inline
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, LinearSVC
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import Perceptron
-from sklearn.linear_model import SGDClassifier
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import make_scorer, accuracy_score
+from sklearn.model_selection import GridSearchCV
 
 #Read in Data
 train_df = pd.read_csv('/Users/connorduplessis/Documents/Python/Python_Titanic/train.csv')
@@ -113,6 +109,7 @@ for row in combine:
 
 #drop name column
 combine = combine.drop(['Last Name', 'First Name'], axis = 1)
+
 #break back into separate df's for models
 test_df2 = combine[combine['Survived'].isna()]
 train_df2 = combine[combine['Survived'].isna() == False]
@@ -135,3 +132,31 @@ GLM_submission = pd.DataFrame({
         })
 
 GLM_submission.to_csv('GLM_submission.csv', index=False)
+
+
+#random forest
+rf = RandomForestClassifier()
+parameters = {'n_estimators': [4, 6, 9],
+              'max_features': ['log2', 'sqrt','auto'],
+              'criterion': ['entropy', 'gini'],
+              'max_depth': [2, 3, 5, 10],
+              'min_samples_split': [2, 3, 5],
+              'min_samples_leaf': [1,5,8]
+              }
+
+acc_scorer = make_scorer(accuracy_score)
+grid_obj = GridSearchCV(rf, parameters, scoring=acc_scorer)
+grid_obj = grid_obj.fit(X_train, Y_train)
+rf = grid_obj.best_estimator_
+
+# Fit the best algorithm to the data.
+rf.fit(X_train, Y_train)
+
+rf_predict = rf.predict(X_test).astype(int)
+
+rf_submission = pd.DataFrame({
+        "PassengerId": test_df2["PassengerId"],
+        "Survived": rf_pred
+        })
+
+rf_submission.to_csv('rf_submission.csv', index = False)
